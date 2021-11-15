@@ -9,9 +9,22 @@
 //Output:
 //  integrated - the value of the integrated function
 template<typename Ret, typename Integrand_Func>
+
+// Usage in V_linear_tetrahedron:
+//      quadrature_single_point(energy, q, element, volume, neohookean_linear_tet);
+
 inline void quadrature_single_point(Ret &&integrated, Eigen::Ref<const Eigen::VectorXd> q, 
                                                Eigen::Ref<const Eigen::RowVectorXi> element, double volume,
                                                Integrand_Func integrand) {
+    // Select a point within the tetrahedron
+    Eigen::Vector3d centroid;
+    for (int i = 0; i < 4; ++i)
+    {
+        centroid += q.segment(3 * element(i), 3);
+    }
+    centroid = centroid / 4;
+    integrand(integrated, q, element, centroid);
+    integrated = volume * integrated;
 
 
 }
