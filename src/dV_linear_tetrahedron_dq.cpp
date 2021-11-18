@@ -14,15 +14,9 @@
 //Output:
 //  dV - the 12x1 gradient of the potential energy for a single tetrahedron
 
-void dV_linear_tetrahedron_dq(Eigen::Vector12d &dV, Eigen::Ref<const Eigen::VectorXd> q, 
+void dV_linear_tetrahedron_dq(Eigen::Vector12d &dV, Eigen::Ref<const Eigen::VectorXd> q,
                           Eigen::Ref<const Eigen::MatrixXd> V, Eigen::Ref<const Eigen::RowVectorXi> element, double volume,
                           double C, double D) {
-
-//   auto neohookean_linear_tet = [&](Eigen::Vector12d &dV, Eigen::Ref<const Eigen::VectorXd>q,
-//   Eigen::Ref<const Eigen::RowVectorXi> element, Eigen::Ref<const Eigen::Vector3d> X) {
-//
-//    };
-//    quadrature_single_point(dV, q, element, volume, neohookean_linear_tet);
 
     auto neohookean_linear_tet = [&](Eigen::Vector12d &dV, Eigen::Ref<const Eigen::VectorXd> q,
     Eigen::Ref<const Eigen::RowVectorXi> element, Eigen::Ref<const Eigen::Vector3d> X) {
@@ -46,13 +40,14 @@ void dV_linear_tetrahedron_dq(Eigen::Vector12d &dV, Eigen::Ref<const Eigen::Vect
         Eigen::Matrix<double, 9, 12> B;
         B.setZero();
         // Iteratively set 1x3 column vectors in B using row vectors in dphi
-        for (int i = 0; i < 4; ++i)
-        {
-            B.block(0, 0 + 3 * i, 3, 1) = dphi.row(i).transpose();
-            B.block(3, 1 + 3 * i, 3, 1) = dphi.row(i).transpose();
-            B.block(6, 2 + 3 * i, 3, 1) = dphi.row(i).transpose();
-        }
-        dV = B.transpose() * dpsi_by_dF;
+       for (int i = 0; i < 3; i++) {
+           for (int j = 0; j < 4; j++) {
+               B(i, 3 * j) = dphi(j, i);
+               B(i+3, 3 * j+1) = dphi(j, i);
+               B(i+6, 3 * j+2) = dphi(j, i);
+           }
+       }
+       dV = B.transpose() * dpsi_by_dF;
     };
 
     // This function returns vol * lambda(x), where x is a point within the tetrahedron (we choose centroid)

@@ -9,7 +9,7 @@
 //Output:
 //  psi - the neohookean energy
 
-void psi_neo_hookean(double &psi, 
+void psi_neo_hookean(double &psi,
                      Eigen::Ref<const Eigen::Matrix3d> F,
                      double C, double D) {
 

@@ -28,7 +28,8 @@ Eigen::Ref<const Eigen::MatrixXi> T, double density, Eigen::Ref<const Eigen::Vec
         // Build per-tetrahedron mass matrix
         Eigen::Matrix1212d Mtet;
         Eigen::RowVectorXi element = T.row(tet);
-        mass_matrix_linear_tetrahedron(Mtet, qdot, element, density, v0(tet));
+        double volume = v0(tet);
+        mass_matrix_linear_tetrahedron(Mtet, qdot, element, density, volume);
 
         // Iterate over every single pair of vertices of the tetrahedron
         for (int v1 = 0; v1 < 4; ++v1)

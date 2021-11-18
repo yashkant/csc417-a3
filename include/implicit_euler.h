@@ -22,7 +22,7 @@ inline void implicit_euler(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt,
                             Eigen::VectorXd &tmp_qdot, Eigen::VectorXd &tmp_force, Eigen::SparseMatrixd &tmp_stiffness) {
 
     // Energy function in defined in setup.h
-    tmp_qdot = qdot  // start with initial guess as previous velocity
+    tmp_qdot = qdot;  // start with initial guess as previous velocity
 
     // Energy gradient
     auto g = [&](Eigen::VectorXd &dx, Eigen::Ref<const Eigen::VectorXd> x) {
@@ -45,6 +45,5 @@ inline void implicit_euler(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt,
     // Update step
     qdot = tmp_qdot;
     q += dt * qdot;
-
 
 }

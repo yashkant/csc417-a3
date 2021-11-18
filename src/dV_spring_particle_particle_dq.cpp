@@ -29,5 +29,5 @@ void dV_spring_particle_particle_dq(Eigen::Ref<Eigen::Vector6d> f, Eigen::Ref<co
     f_vec = -1 * (q0 - q1) / (q0-q1).norm();
     f.segment<3>(3) = f_vec * f_mag;
 
-    
+
 }

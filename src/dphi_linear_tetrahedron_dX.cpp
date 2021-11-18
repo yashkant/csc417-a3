@@ -24,8 +24,6 @@ Eigen::Ref<const Eigen::RowVectorXi> element, Eigen::Ref<const Eigen::Vector3d> 
 
     // dphi_dX = col(-1.T * T.inv, T.inv)
     Eigen::Matrix3d Tinv = T.inverse();
-    Eigen::Vector3d NegOne = -Eigen::Vector3d::Ones();
-    dphi.row(0) = NegOne.transpose() * Tinv;
+    dphi.row(0) = -Eigen::Vector3d::Ones().transpose() * Tinv;
     dphi.block<3, 3>(1, 0) = Tinv;
-
 }

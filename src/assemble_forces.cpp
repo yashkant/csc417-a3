@@ -16,20 +16,23 @@ void assemble_forces(Eigen::VectorXd &f, Eigen::Ref<const Eigen::VectorXd> q, Ei
                      Eigen::Ref<const Eigen::MatrixXd> V, Eigen::Ref<const Eigen::MatrixXi> T, Eigen::Ref<const Eigen::VectorXd> v0,
                      double C, double D) {
 
-    f.resize(q.rows());
+    f.resize(3  * q.rows());
     f.setZero();
 
     // Iterate over all tetrahedrons in the connectivity matrix
     for (int i = 0; i < T.rows(); ++i)
     {
         Eigen::Vector12d dV_dq;
-        dV_linear_tetrahedron_dq(dV_dq, q, V, T.row(i), v0(i), C, D);
+        Eigen::RowVector4i element = T.row(i);
+        double volume = v0(i);
+        dV_linear_tetrahedron_dq(dV_dq, q, V, element, volume, C, D);
 
         // Compute force between every spring pair within the tetrahedron
-        f.segment(3 * T(i, 0), 3) += -dV_dq.segment(0, 3);
-        f.segment(3 * T(i, 1), 3) += -dV_dq.segment(3, 3);
-        f.segment(3 * T(i, 2), 3) += -dV_dq.segment(6, 3);
-        f.segment(3 * T(i, 3), 3) += -dV_dq.segment(9, 3);
+        for (int j = 0; j < 4; j++) {
+            f(3 * T(i, j))   -= dV_dq(3 * j);
+            f(3 * T(i, j)+1) -= dV_dq(3 * j+1);
+            f(3 * T(i, j)+2) -= dV_dq(3 * j+2);
+        }
     }
 
     };
