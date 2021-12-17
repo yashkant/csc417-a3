@@ -6,5 +6,5 @@
 //  C,D - material parameters for the Neo-Hookean model
 //Output:
 //  psi - the 9x1 gradient of the potential energy wrt to the deformation gradient
-void dpsi_neo_hookean_dF(Eigen::Vector9d &psi, Eigen::Ref<const Eigen::Matrix3d> F, double C, double D);
+void dpsi_neo_hookean_dF(Eigen::Vector9d &psi, Eigen::Ref<const Eigen::Matrix3d> F, double C, double D, const std::string&  energy_type="smith_14");
 
