@@ -14,7 +14,7 @@
 
 void d2V_linear_tetrahedron_dq2(Eigen::Matrix1212d &H, Eigen::Ref<const Eigen::VectorXd> q,
                           Eigen::Ref<const Eigen::MatrixXd> V, Eigen::Ref<const Eigen::RowVectorXi> element, double volume,
-                          double C, double D) {
+                          double C, double D, const std::string&  energy_type) {
 
     auto neohookean_linear_tet = [&](Eigen::Matrix1212d &dV, Eigen::Ref<const Eigen::VectorXd> q,
     Eigen::Ref<const Eigen::RowVectorXi> element, Eigen::Ref<const Eigen::Vector3d> X) {
@@ -30,7 +30,7 @@ void d2V_linear_tetrahedron_dq2(Eigen::Matrix1212d &H, Eigen::Ref<const Eigen::V
         F = t * dphi;
 
         Eigen::Matrix99d d2psi;
-        d2psi_neo_hookean_dF2(d2psi, F, C, D);
+        d2psi_neo_hookean_dF2(d2psi, F, C, D, energy_type);
 
        Eigen::MatrixXd B = Eigen::MatrixXd::Zero(9, 12);
        for (int i = 0; i < 3; i++) {

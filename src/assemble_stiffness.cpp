@@ -15,7 +15,7 @@ void assemble_stiffness(Eigen::SparseMatrixd &K, Eigen::Ref<const Eigen::VectorX
         Eigen::Ref<const Eigen::VectorXd> qdot,
         Eigen::Ref<const Eigen::MatrixXd> V,
         Eigen::Ref<const Eigen::MatrixXi> T, Eigen::Ref<const Eigen::VectorXd> v0,
-        double C, double D) {
+        double C, double D, const std::string&  energy_type) {
 
     K.resize(q.rows(), q.rows());
     std::vector<Trip> trips;
@@ -27,7 +27,7 @@ void assemble_stiffness(Eigen::SparseMatrixd &K, Eigen::Ref<const Eigen::VectorX
         Eigen::Matrix1212d d2V_dq2;
 
         // Calculate per tetrahedron stiffness matrix
-        d2V_linear_tetrahedron_dq2(d2V_dq2, q, V, T.row(i), v0(i), C, D);
+        d2V_linear_tetrahedron_dq2(d2V_dq2, q, V, T.row(i), v0(i), C, D, energy_type);
 
         // Fit negative hessian values for every pair of tetrahedron vertices in K
         for (int j = 0; j < 4; ++j)

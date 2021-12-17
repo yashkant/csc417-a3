@@ -14,7 +14,7 @@
 
 void assemble_forces(Eigen::VectorXd &f, Eigen::Ref<const Eigen::VectorXd> q, Eigen::Ref<const Eigen::MatrixXd> qdot,
                      Eigen::Ref<const Eigen::MatrixXd> V, Eigen::Ref<const Eigen::MatrixXi> T, Eigen::Ref<const Eigen::VectorXd> v0,
-                     double C, double D) {
+                     double C, double D, const std::string&  energy_type) {
 
     f.resize(3  * q.rows());
     f.setZero();
@@ -25,7 +25,7 @@ void assemble_forces(Eigen::VectorXd &f, Eigen::Ref<const Eigen::VectorXd> q, Ei
         Eigen::Vector12d dV_dq;
         Eigen::RowVector4i element = T.row(i);
         double volume = v0(i);
-        dV_linear_tetrahedron_dq(dV_dq, q, V, element, volume, C, D);
+        dV_linear_tetrahedron_dq(dV_dq, q, V, element, volume, C, D, energy_type);
 
         // Compute force between every spring pair within the tetrahedron
         for (int j = 0; j < 4; j++) {

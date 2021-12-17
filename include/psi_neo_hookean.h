@@ -6,4 +6,4 @@
 //  C,D - material parameters for the Neo-Hookean model
 //Output:
 //  psi - the neohookean energy
-void psi_neo_hookean(double &psi, Eigen::Ref<const Eigen::Matrix3d> F, double C, double D, const std::string&  energy_type="smith_14");
+void psi_neo_hookean(double &psi, Eigen::Ref<const Eigen::Matrix3d> F, double C, double D, const std::string&  energy_type);

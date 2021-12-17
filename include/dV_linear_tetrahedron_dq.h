@@ -11,4 +11,4 @@
 //  dV - the 12x1 gradient of the potential energy for a single tetrahedron
 void dV_linear_tetrahedron_dq(Eigen::Vector12d &dV, Eigen::Ref<const Eigen::VectorXd> q, 
                           Eigen::Ref<const Eigen::MatrixXd> V, Eigen::Ref<const Eigen::RowVectorXi> element, double volume,
-                          double C, double D);
+                          double C, double D, const std::string&  energy_type);

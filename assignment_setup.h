@@ -220,12 +220,19 @@ std::vector<std::pair<Eigen::Vector3d, unsigned int>> spring_points;
 
 bool skinning_on = true;
 bool fully_implicit = false;
-bool bunny = true; 
+bool bunny = true;
+const char *energies[5] = { "smith_14", "smith_13",
+                          "bower", "wang","odgen" };
+int cur_energy = 0;
+std::string energy_type=energies[cur_energy];
 
 //selection spring
 double k_selected = 1e5;
 
-inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, double t) {  
+//force multiplier
+double fm = 1.0;
+
+inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, double t) {
 
     double V_ele, T_ele, KE,PE;
 
@@ -246,7 +253,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
 
         for(unsigned int ei=0; ei<T.rows(); ++ei) {
             
-            V_linear_tetrahedron(V_ele,newq , V, T.row(ei), v0(ei), C, D);
+            V_linear_tetrahedron(V_ele,newq , V, T.row(ei), v0(ei), C, D, energy_type);
             E += V_ele;
         }
 
@@ -262,7 +269,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
 
     auto force = [&](Eigen::VectorXd &f, Eigen::Ref<const Eigen::VectorXd> q2, Eigen::Ref<const Eigen::VectorXd> qdot2) { 
         
-            assemble_forces(f, P.transpose()*q2+x0, P.transpose()*qdot2, V, T, v0, C,D);
+            assemble_forces(f, P.transpose()*q2+x0, P.transpose()*qdot2, V, T, v0, C,D, energy_type);
 
             for(unsigned int pickedi = 0; pickedi < spring_points.size(); pickedi++) {
                 dV_spring_particle_particle_dq(dV_mouse, spring_points[pickedi].first, (P.transpose()*q2+x0).segment<3>(spring_points[pickedi].second), 0.0, k_selected_now);
@@ -272,11 +279,11 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
             f = P*f; 
         };
 
-        //assemble stiffness matrix,
-        auto stiffness = [&](Eigen::SparseMatrixd &K, Eigen::Ref<const Eigen::VectorXd> q2, Eigen::Ref<const Eigen::VectorXd> qdot2) { 
-            assemble_stiffness(K, P.transpose()*q2+x0, P.transpose()*qdot2, V, T, v0, C, D);
-            K = P*K*P.transpose();
-        };
+    //assemble stiffness matrix,
+    auto stiffness = [&](Eigen::SparseMatrixd &K, Eigen::Ref<const Eigen::VectorXd> q2, Eigen::Ref<const Eigen::VectorXd> qdot2) {
+        assemble_stiffness(K, P.transpose()*q2+x0, P.transpose()*qdot2, V, T, v0, C, D, energy_type);
+        K = P*K*P.transpose();
+    };
 
         if(fully_implicit)
             implicit_euler(q, qdot, dt, M, energy, force, stiffness, tmp_qdot, tmp_force, tmp_stiffness);
@@ -292,7 +299,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
         T_linear_tetrahedron(T_ele, P.transpose()*qdot, T.row(ei), density, v0(ei));
         KE += T_ele;
 
-        V_linear_tetrahedron(V_ele, P.transpose()*q+x0, V, T.row(ei), v0(ei), C, D);
+        V_linear_tetrahedron(V_ele, P.transpose()*q+x0, V, T.row(ei), v0(ei), C, D, energy_type);
         PE += V_ele;
     }
     
@@ -306,36 +313,108 @@ inline void draw(Eigen::Ref<const Eigen::VectorXd> q, Eigen::Ref<const Eigen::Ve
     Visualize::update_vertex_positions(0, P.transpose()*q + x0);
 
 }
-
+std::string next_energy(){
+    std::string now = energies[cur_energy];
+    cur_energy += 1;
+    return now;
+}
 bool key_down_callback(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifiers) {
 
-    if(key =='N') {
-        std::cout<<"toggle integrators \n";
-        fully_implicit = !fully_implicit;
-    } else if(key == 'S') {
-        
-        skinning_on = !skinning_on;
-        Visualize::toggle_skinning(skinning_on);
-    }
+//    if(key =='N') {
+//        std::cout<<"toggle integrators \n";
+//        fully_implicit = !fully_implicit;
+//    } else if(key == 'S') {
+//
+//        skinning_on = !skinning_on;
+//        Visualize::toggle_skinning(skinning_on);
+//    }else if(key == 'E'){
+//        energy_type = next_energy();
+//    }
 
     return false;
+}
+void parse_options(int argc, char** argv){
+    for(int i=1; i<argc-1 ;i+=2){
+        if(strcmp(argv[i], "--mesh") == 0 || strcmp(argv[i], "-m") == 0){
+
+            if(strcmp(argv[i+1], "bunny") == 0) {
+                igl::readMESH("../data/coarser_bunny.mesh",V,T, F);
+                igl::readOBJ("../data/bunny_skin.obj", V_skin, F_skin);
+                bunny = true;
+                fully_implicit = true;
+            }else{
+                read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
+                igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
+
+                bunny = false;
+                fully_implicit = true;
+
+            }
+        }else if(strcmp(argv[i], "--poisson_rate") == 0|| strcmp(argv[i], "-mu")== 0){
+            if(atof(argv[i+1]) > 0.3 && atof(argv[i+1]) < 0.49) {
+                mu = atof(argv[i+1]); //poissons ratio
+                std::cout<<"Using poissons ratio: " << mu << "\n";
+            }
+            else{
+                mu = 0.4; //poissons ratio
+                std::cout<<"Using default poissons ratio: " << mu << "\n";
+            }
+        }else if(strcmp(argv[i], "--young_modulus")== 0 || strcmp(argv[i], "-ym")== 0){
+            if(atof(argv[i+1]) > 10000.0 && atof(argv[i+1]) < 10000000.0) {
+                YM = atof(argv[i+1]); //young's modulus
+                std::cout<<"Using Young Modulus: " << YM << "\n";
+            }
+            else{
+                YM = 6e5; //young's modulus
+                std::cout<<"Using default Young Modulus: " << YM << "\n";
+            }
+        }else if(strcmp(argv[i], "--force_multiplier") == 0|| strcmp(argv[i], "-fm")== 0){
+            if(atof(argv[i+1]) > 1.0 && atof(argv[i+1]) < 50.0) {
+                fm = atof(argv[i+1]);
+                std::cout<<"Using Force Multiplier: " << fm << "\n";
+            }
+            else{
+                fm = 1.0;
+                std::cout<<"Using default Force Multiplier: " << fm << "\n";
+            }
+        }else if(strcmp(argv[i], "--energy_model") == 0|| strcmp(argv[i], "-em")== 0){
+            if(strcmp(argv[i+1],energies[0]) ==0 || strcmp(argv[i+1],energies[1])==0 || strcmp(argv[i+1],energies[2])==0 || strcmp(argv[i+1],energies[3])==0 || strcmp(argv[i+1],energies[4])==0){
+                std::cout<<"Using Energy Model: " << argv[i+1] << "\n";
+                energy_type = argv[i+1];
+            }else{
+                std::cout<<"Using default Energy Model: " << energies[0] << "\n";
+                energy_type = energies[0];
+            }
+        }
+
+
+
+    }
 }
 inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::VectorXd &qdot) {
 
     //load geometric data 
-    igl::readMESH("../data/coarser_bunny.mesh",V,T, F);
-    igl::readOBJ("../data/bunny_skin.obj", V_skin, F_skin);
+    read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
+    igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
 
+    bunny = false;
+    fully_implicit = true;
+
+//    if(argc > 1) {
+//        if(strcmp(argv[1], "arma") == 0) {
+//            read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
+//            igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
+//
+//            bunny = false;
+//            fully_implicit = true;
+//        }
+//    }
+//    if(argc > 2) {
+//        energy_type = argv[2];
+//    }
     if(argc > 1) {
-        if(strcmp(argv[1], "arma") == 0) {
-            read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
-            igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
-        
-            bunny = false;
-            fully_implicit = true;
-        }
+         parse_options(argc, argv);
     }
-    
     igl::boundary_facets(T, F);
     F = F.rowwise().reverse().eval();
     
