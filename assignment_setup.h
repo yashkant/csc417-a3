@@ -300,7 +300,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
     }
     
     Visualize::add_energy(t, KE, PE);
-        
+    // std::cout << t << "\t" << KE << "\t" << PE << std::endl;
 }
 
 inline void draw(Eigen::Ref<const Eigen::VectorXd> q, Eigen::Ref<const Eigen::VectorXd> qdot, double t) {
@@ -312,15 +312,15 @@ inline void draw(Eigen::Ref<const Eigen::VectorXd> q, Eigen::Ref<const Eigen::Ve
 
 bool key_down_callback(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifiers) {
 
-    if(key =='N') {
-        std::cout<<"toggle integrators \n";
-        fully_implicit = !fully_implicit;
-    } else if(key == 'S') {
-        
-        skinning_on = !skinning_on;
-        Visualize::toggle_skinning(skinning_on);
-    }
-
+//    if(key =='N') {
+//        std::cout<<"toggle integrators \n";
+//        fully_implicit = !fully_implicit;
+//    } else if(key == 'S') {
+//
+//        skinning_on = !skinning_on;
+//        Visualize::toggle_skinning(skinning_on);
+//    }
+//
     return false;
 }
 inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::VectorXd &qdot) {
@@ -389,7 +389,7 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
 
     //add geometry to scene
     Visualize::add_object_to_scene(V,F, V_skin, F_skin, N, Eigen::RowVector3d(244,165,130)/255.);
-    Visualize::toggle_skinning(false);
+    Visualize::toggle_skinning(true);
     
     //bunny
     if(bunny)
