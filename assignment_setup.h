@@ -225,7 +225,10 @@ bool bunny = true;
 //selection spring
 double k_selected = 1e5;
 
-inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, double t) {  
+//force multiplier
+double fm = 1.0;
+
+inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, double t) {
 
     double V_ele, T_ele, KE,PE;
 
@@ -237,7 +240,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
     double k_selected_now = (Visualize::is_mouse_dragging() ? k_selected : 0.);
     
     for(unsigned int pickedi = 0; pickedi < Visualize::picked_vertices().size(); pickedi++) {   
-        spring_points.push_back(std::make_pair((P.transpose()*q+x0).segment<3>(3*Visualize::picked_vertices()[pickedi]) + Visualize::mouse_drag_world() + Eigen::Vector3d::Constant(1e-6),3*Visualize::picked_vertices()[pickedi]));
+        spring_points.push_back(std::make_pair((P.transpose()*q+x0).segment<3>(3*Visualize::picked_vertices()[pickedi]) + Visualize::mouse_drag_world() * fm + Eigen::Vector3d::Constant(1e-6),3*Visualize::picked_vertices()[pickedi]));
     }
 
     auto energy = [&](Eigen::Ref<const Eigen::VectorXd> qdot_1)->double {
@@ -323,19 +326,59 @@ bool key_down_callback(igl::opengl::glfw::Viewer &viewer, unsigned char key, int
 inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::VectorXd &qdot) {
 
     //load geometric data 
-    igl::readMESH("../data/coarser_bunny.mesh",V,T, F);
-    igl::readOBJ("../data/bunny_skin.obj", V_skin, F_skin);
+    //    igl::readMESH("../data/coarser_bunny.mesh",V,T, F);
+    //    igl::readOBJ("../data/bunny_skin.obj", V_skin, F_skin);
+    //
+    //    if(argc > 1) {
+    //        if(strcmp(argv[1], "arma") == 0) {
+    //            read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
+    //            igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
+    //
+    //            bunny = false;
+    //            fully_implicit = true;
+    //        }
+    //    }
 
-    if(argc > 1) {
-        if(strcmp(argv[1], "arma") == 0) {
-            read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
-            igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
-        
-            bunny = false;
-            fully_implicit = true;
-        }
+    // Set armadillo and fully-implicit integrator default
+    read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
+    igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
+    fully_implicit = true;
+    bunny = false;
+
+    // Usage -- ./a3-finite-elements-3d -1 0.4 -1 3
+    // To make animation unstable decrease YM or increase mu (should be always < 0.5)
+
+
+    // Pass in Poissons Ratio
+    if(argc > 2 && atof(argv[2]) > 0.3 && atof(argv[2]) < 0.49) {
+        mu = atof(argv[2]); //poissons ratio
+        std::cout<<"Using poissons ratio: " << mu << "\n";
     }
-    
+    else{
+        mu = 0.4; //poissons ratio
+        std::cout<<"Using default poissons ratio: " << mu << "\n";
+    }
+
+    // Pass in Young's Modulus
+    if(argc > 3 && atof(argv[3]) > 10000.0 && atof(argv[3]) < 10000000.0) {
+        YM = atof(argv[3]); //young's modulus
+        std::cout<<"Using Young Modulus: " << YM << "\n";
+    }
+    else{
+        YM = 6e5; //young's modulus
+        std::cout<<"Using default Young Modulus: " << YM << "\n";
+    }
+
+    // Pass in Force Multiplier
+    if(argc > 4 && atof(argv[4]) > 1.0 && atof(argv[4]) < 50.0) {
+        fm = atof(argv[4]);
+        std::cout<<"Using Force Multiplier: " << fm << "\n";
+    }
+    else{
+        fm = 1.0;
+        std::cout<<"Using default Force Multiplier: " << fm << "\n";
+    }
+
     igl::boundary_facets(T, F);
     F = F.rowwise().reverse().eval();
     
@@ -381,8 +424,6 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
         k_selected = 1e8;
     } else {
         //arma
-        YM = 6e5; //young's modulus
-        mu = 0.4; //poissons ratio
         D = 0.5*(YM*mu)/((1.0+mu)*(1.0-2.0*mu));
         C = 0.5*YM/(2.0*(1.0+mu));
         k_selected = 1e5;
