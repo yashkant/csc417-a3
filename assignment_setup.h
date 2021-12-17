@@ -244,7 +244,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
     double k_selected_now = (Visualize::is_mouse_dragging() ? k_selected : 0.);
     
     for(unsigned int pickedi = 0; pickedi < Visualize::picked_vertices().size(); pickedi++) {   
-        spring_points.push_back(std::make_pair((P.transpose()*q+x0).segment<3>(3*Visualize::picked_vertices()[pickedi]) + Visualize::mouse_drag_world() + Eigen::Vector3d::Constant(1e-6),3*Visualize::picked_vertices()[pickedi]));
+        spring_points.push_back(std::make_pair((P.transpose()*q+x0).segment<3>(3*Visualize::picked_vertices()[pickedi]) + Visualize::mouse_drag_world() * fm + Eigen::Vector3d::Constant(1e-6),3*Visualize::picked_vertices()[pickedi]));
     }
 
     auto energy = [&](Eigen::Ref<const Eigen::VectorXd> qdot_1)->double {
@@ -304,7 +304,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
     }
     
     Visualize::add_energy(t, KE, PE);
-        
+    // std::cout << t << "\t" << KE << "\t" << PE << std::endl;
 }
 
 inline void draw(Eigen::Ref<const Eigen::VectorXd> q, Eigen::Ref<const Eigen::VectorXd> qdot, double t) {
@@ -425,7 +425,7 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
 
     //add geometry to scene
     Visualize::add_object_to_scene(V,F, V_skin, F_skin, N, Eigen::RowVector3d(244,165,130)/255.);
-    Visualize::toggle_skinning(false);
+    Visualize::toggle_skinning(true);
     
     //bunny
     if(bunny)
@@ -460,8 +460,6 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
         k_selected = 1e8;
     } else {
         //arma
-        YM = 6e5; //young's modulus
-        mu = 0.4; //poissons ratio
         D = 0.5*(YM*mu)/((1.0+mu)*(1.0-2.0*mu));
         C = 0.5*YM/(2.0*(1.0+mu));
         k_selected = 1e5;
