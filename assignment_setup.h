@@ -222,7 +222,7 @@ bool skinning_on = true;
 bool fully_implicit = false;
 bool bunny = true;
 const char *energies[5] = { "smith_14", "smith_13",
-                          "bower", "wang","odgen" };
+                          "bower", "wang","ogden" };
 int cur_energy = 0;
 std::string energy_type=energies[cur_energy];
 
@@ -320,16 +320,13 @@ std::string next_energy(){
 }
 bool key_down_callback(igl::opengl::glfw::Viewer &viewer, unsigned char key, int modifiers) {
 
-//    if(key =='N') {
-//        std::cout<<"toggle integrators \n";
-//        fully_implicit = !fully_implicit;
-//    } else if(key == 'S') {
-//
-//        skinning_on = !skinning_on;
-//        Visualize::toggle_skinning(skinning_on);
-//    }else if(key == 'E'){
-//        energy_type = next_energy();
-//    }
+    if(key == 'S') {
+
+        skinning_on = !skinning_on;
+        Visualize::toggle_skinning(skinning_on);
+    }else if(key == 'E'){
+        energy_type = next_energy();
+    }
 
     return false;
 }
