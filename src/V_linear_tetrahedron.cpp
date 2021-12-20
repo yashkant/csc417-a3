@@ -32,6 +32,7 @@ void V_linear_tetrahedron(double &energy, Eigen::Ref<const Eigen::VectorXd> q,
 
         psi_neo_hookean(e, F, C, D, energy_type);
 
+
     };
 
     quadrature_single_point(energy, q, element, volume, neohookean_linear_tet);

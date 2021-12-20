@@ -34,6 +34,7 @@ void psi_neo_hookean(double &psi,
     else if (energy_type == "wang"){
         // Neo-hookean strain energy (Wang and Yang, 2016)
         psi = mu * 0.5 * (std::pow(J, -2. / 3.) * (F.transpose() * F).trace() - 3) + lambda * 0.5 * std::pow(J - 1, 1);
+
     }
     else if (energy_type == "ogden"){
         // Neo-hookean strain energy (Ogden, 1984)

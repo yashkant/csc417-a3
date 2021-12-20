@@ -76,16 +76,16 @@ float oom_pe = 0;
 int initial = 0;
 int cur_energy = 0;
 std::string energy_type=energies[cur_energy];
-map<string, float> range_ke_map = {{"bower_arma",0.01},
+map<string, float> range_ke_map = {{"bower_arma",0.0001},
                                    {"smith_14_arma",0.0001},
                                    {"smith_13_arma",0.01},
                                    {"ogden_arma",0.01},
                                    {"ogden_bunny",1e5},
                                    {"smith_13_bunny",1e3},
                                    {"smith_14_bunny",1e7},
-                                   {"bower_bunny",1e9},
+                                   {"bower_bunny",1e4},
 };
-map<string, float> range_pe_map = {{"bower_arma",100},
+map<string, float> range_pe_map = {{"bower_arma",1},
                                    {"smith_14_arma",1000},
                                    {"smith_13_arma",1000},
                                    {"ogden_arma",100},
