@@ -78,19 +78,19 @@ int cur_energy = 0;
 std::string energy_type=energies[cur_energy];
 map<string, float> range_ke_map = {{"bower_arma",0.0001},
                                    {"smith_14_arma",0.0001},
-                                   {"smith_13_arma",0.01},
-                                   {"ogden_arma",0.01},
-                                   {"ogden_bunny",1e5},
-                                   {"smith_13_bunny",1e3},
+                                   {"smith_13_arma",0.0001},
+                                   {"ogden_arma",0.001},
+                                   {"ogden_bunny",1e6},
+                                   {"smith_13_bunny",1e6},
                                    {"smith_14_bunny",1e7},
                                    {"bower_bunny",1e4},
 };
 map<string, float> range_pe_map = {{"bower_arma",1},
                                    {"smith_14_arma",1000},
-                                   {"smith_13_arma",1000},
-                                   {"ogden_arma",100},
-                                   {"ogden_bunny",1e10},
-                                   {"smith_13_bunny",1e8},
+                                   {"smith_13_arma",1},
+                                   {"ogden_arma",1},
+                                   {"ogden_bunny",1e7},
+                                   {"smith_13_bunny",1e7},
                                    {"smith_14_bunny",1e12},
                                    {"bower_bunny",1e4},
                          };
@@ -184,8 +184,8 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
     }else{
         bun="arma";
     }
-    KE = KE / range_ke_map[energy_type +"_"+bun];
-    PE = PE / range_pe_map[energy_type +"_"+bun];
+    KE = KE / ((range_ke_map[energy_type +"_"+bun])*fm);
+    PE = PE / (range_pe_map[energy_type +"_"+bun]*fm);
     Visualize::add_energy(t, KE, PE);
 //     std::cout << t << "\t" << KE << "\t" << PE << "\t"<< oom_pe<<std::endl;
 }
@@ -381,7 +381,7 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
         max.y -= min.y + ImGui::GetItemsLineHeightWithSpacing() * 3;
 
         Visualize::plot_energy("T", 1, ImVec2(-15,10), ImVec2(0,10), ImGui::GetColorU32(ImGuiCol_PlotLines));
-        Visualize::plot_energy("V", 2, ImVec2(-15,10), ImVec2(-20, 20), ImGui::GetColorU32(ImGuiCol_HeaderActive));
+        Visualize::plot_energy("V", 2, ImVec2(-15,10), ImVec2(-30, 30), ImGui::GetColorU32(ImGuiCol_HeaderActive));
         Visualize::plot_energy("T+V", 3, ImVec2(-15,10), ImVec2(-10,30), ImGui::GetColorU32(ImGuiCol_ColumnActive));
 
         ImGui::End();
