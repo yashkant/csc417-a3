@@ -48,7 +48,7 @@ void h(Ret &&a, B b, C c, void (*func)(Ret, B, C)) {
 }
 
 int main(int argc, char **argv) {
-//    std::cout << "hey";
+    std::cout << "hey";
     std::cout<<"Start A3\n";
 
     //assignment specific setup

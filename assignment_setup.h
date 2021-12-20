@@ -62,19 +62,40 @@ Eigen::VectorXd v0;
 Eigen::VectorXd tmp_qdot;
 Eigen::VectorXd tmp_force;
 Eigen::SparseMatrixd tmp_stiffness;
-
+using std::endl; using std::string;
+using std::map; using std::copy;
 std::vector<std::pair<Eigen::Vector3d, unsigned int>> spring_points;
 
 bool skinning_on = true;
 bool fully_implicit = false;
 bool bunny = true;
 const char *energies[5] = { "smith_14", "smith_13",
-                          "bower", "wang","odgen" };
+                          "bower", "wang","ogden" };
 float oom_ke = 0;
 float oom_pe = 0;
 int initial = 0;
 int cur_energy = 0;
 std::string energy_type=energies[cur_energy];
+map<string, float> range_ke_map = {{"bower_arma",0.01},
+                                   {"smith_14_arma",0.0001},
+                                   {"smith_13_arma",0.01},
+                                   {"ogden_arma",0.01},
+                                   {"ogden_bunny",1e5},
+                                   {"smith_13_bunny",1e3},
+                                   {"smith_14_bunny",1e7},
+                                   {"bower_bunny",1e9},
+};
+map<string, float> range_pe_map = {{"bower_arma",100},
+                                   {"smith_14_arma",1000},
+                                   {"smith_13_arma",1000},
+                                   {"ogden_arma",100},
+                                   {"ogden_bunny",1e10},
+                                   {"smith_13_bunny",1e8},
+                                   {"smith_14_bunny",1e12},
+                                   {"bower_bunny",1e4},
+                         };
+
+
 
 //selection spring
 double k_selected = 1e5;
@@ -152,20 +173,19 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
         V_linear_tetrahedron(V_ele, P.transpose()*q+x0, V, T.row(ei), v0(ei), C, D, energy_type);
         PE += V_ele;
     }
-    if(initial < 10){
+    if(initial < 10 or pow(10,2*oom_ke)< KE or pow(10,2*oom_pe)< PE){
         oom_ke = floor(log10(abs(KE)));
         oom_pe = floor(log10(abs(PE)));
         initial +=1;
     }
-
+    string bun = "";
     if(bunny){
-        KE = KE /10000;
+       bun = "bunny";
     }else{
-        KE = KE /pow(10, oom_ke);
+        bun="arma";
     }
-
-    PE = PE / pow(10, oom_pe);
-
+    KE = KE / range_ke_map[energy_type +"_"+bun];
+    PE = PE / range_pe_map[energy_type +"_"+bun];
     Visualize::add_energy(t, KE, PE);
 //     std::cout << t << "\t" << KE << "\t" << PE << "\t"<< oom_pe<<std::endl;
 }
@@ -287,12 +307,15 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
     //add geometry to scene
     Visualize::add_object_to_scene(V,F, V_skin, F_skin, N, Eigen::RowVector3d(244,165,130)/255.);
     Visualize::toggle_skinning(true);
-    
+    string bun = "";
     //bunny
-    if(bunny)
+    if(bunny){
         Visualize::set_picking_tolerance(1.);
-    else
+        bun = "bunny";
+    }else{
         Visualize::set_picking_tolerance(0.01);
+        bun = "arma";
+    }
 
     //volumes of all elements
     igl::volume(V,T, v0);
@@ -339,6 +362,7 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
 
     //igl additional menu setup
     // Add content to the default menu window
+
     Visualize::viewer_menu().callback_draw_custom_window = [&]()
     {
         // Define next window position + size
@@ -356,9 +380,9 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
         max.x = ( max.x - min.x ) / 2;
         max.y -= min.y + ImGui::GetItemsLineHeightWithSpacing() * 3;
 
-        Visualize::plot_energy("T", 1, ImVec2(-15,10), ImVec2(0,5), ImGui::GetColorU32(ImGuiCol_PlotLines));
-        Visualize::plot_energy("V", 2, ImVec2(-15,10), ImVec2(-5,5), ImGui::GetColorU32(ImGuiCol_HeaderActive));
-        Visualize::plot_energy("T+V", 3, ImVec2(-15,10), ImVec2(0,2*5), ImGui::GetColorU32(ImGuiCol_ColumnActive));
+        Visualize::plot_energy("T", 1, ImVec2(-15,10), ImVec2(0,10), ImGui::GetColorU32(ImGuiCol_PlotLines));
+        Visualize::plot_energy("V", 2, ImVec2(-15,10), ImVec2(-20, 20), ImGui::GetColorU32(ImGuiCol_HeaderActive));
+        Visualize::plot_energy("T+V", 3, ImVec2(-15,10), ImVec2(-10,30), ImGui::GetColorU32(ImGuiCol_ColumnActive));
 
         ImGui::End();
     };
