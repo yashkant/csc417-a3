@@ -26,6 +26,7 @@ namespace Visualize {
     bool plot_phase_space(const char *label, ImVec2 q_bounds, ImVec2 q_dot_bounds, const Eigen::VectorXd &q, const Eigen::VectorXd &q_dot);
     
     void add_energy(float t, float T, float V);
+    void add_energy_2(float t, float T, float V, float VG);
     bool plot_energy(const char *label, unsigned int type, ImVec2 T_bounds, ImVec2 V_bounds, ImU32 plot_col);
     
     void setup(const Eigen::VectorXd &q, const Eigen::VectorXd &qdot, bool ps_plot = false);

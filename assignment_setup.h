@@ -62,6 +62,7 @@ Eigen::VectorXd v0;
 Eigen::VectorXd tmp_qdot;
 Eigen::VectorXd tmp_force;
 Eigen::SparseMatrixd tmp_stiffness;
+
 using std::endl; using std::string;
 using std::map; using std::copy;
 std::vector<std::pair<Eigen::Vector3d, unsigned int>> spring_points;
@@ -69,8 +70,10 @@ std::vector<std::pair<Eigen::Vector3d, unsigned int>> spring_points;
 bool skinning_on = true;
 bool fully_implicit = false;
 bool bunny = true;
+bool simulate_vol = false;
 const char *energies[5] = { "smith_14", "smith_13",
                           "bower", "wang","ogden" };
+std::vector<unsigned int> constant_pickeds;
 float oom_ke = 0;
 float oom_pe = 0;
 int initial = 0;
@@ -116,6 +119,7 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
     
     for(unsigned int pickedi = 0; pickedi < Visualize::picked_vertices().size(); pickedi++) {   
         spring_points.push_back(std::make_pair((P.transpose()*q+x0).segment<3>(3*Visualize::picked_vertices()[pickedi]) + Visualize::mouse_drag_world() * fm + Eigen::Vector3d::Constant(1e-6),3*Visualize::picked_vertices()[pickedi]));
+
     }
 
     auto energy = [&](Eigen::Ref<const Eigen::VectorXd> qdot_1)->double {
@@ -188,6 +192,112 @@ inline void simulate(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, doubl
     PE = PE / (range_pe_map[energy_type +"_"+bun]*fm);
     Visualize::add_energy(t, KE, PE);
 //     std::cout << t << "\t" << KE << "\t" << PE << "\t"<< oom_pe<<std::endl;
+}
+double calc_volume(double &energy, Eigen::Ref<const Eigen::VectorXd> q,
+                          Eigen::Ref<const Eigen::MatrixXd> V, Eigen::Ref<const Eigen::RowVectorXi> element){
+
+    Eigen::Vector3d a = q.segment<3>(3 * element(1)) - q.segment<3>(3 * element(0));
+    Eigen::Vector3d b = q.segment<3>(3 * element(2)) - q.segment<3>(3 * element(0));
+    Eigen::Vector3d c = q.segment<3>(3 * element(3)) - q.segment<3>(3 * element(0));
+    energy = (a.cross(b)).dot(c)/6.0;
+}
+inline void simulate_volume(Eigen::VectorXd &q, Eigen::VectorXd &qdot, double dt, double t) {
+
+    double V_ele, T_ele, KE,PE,VG, VG_ele;
+
+    spring_points.clear();
+
+
+    //Interaction spring
+    Eigen::Vector3d mouse;
+    Eigen::Vector6d dV_mouse;
+    double k_selected_now = (Visualize::is_mouse_dragging() ? k_selected : 0.);
+    Eigen::Vector3d constant_f;
+    constant_f << 0.002813, 0.002813, 0;
+    if(!Visualize::picked_vertices().empty()){
+        constant_pickeds.push_back(Visualize::picked_vertices()[0]);
+
+    }
+    for(unsigned int pickedi = 0; pickedi < constant_pickeds.size(); pickedi++) {
+        spring_points.push_back(std::make_pair((P.transpose()*q+x0).segment<3>(3*constant_pickeds[pickedi]) + constant_f * fm + Eigen::Vector3d::Constant(1e-6),3*constant_pickeds[pickedi]));
+
+    }
+
+    auto energy = [&](Eigen::Ref<const Eigen::VectorXd> qdot_1)->double {
+        double E = 0;
+        Eigen::VectorXd newq = P.transpose()*(q+dt*qdot_1)+x0;
+
+        for(unsigned int ei=0; ei<T.rows(); ++ei) {
+
+            V_linear_tetrahedron(V_ele,newq , V, T.row(ei), v0(ei), C, D, energy_type);
+            E += V_ele;
+        }
+
+        for(unsigned int pickedi = 0; pickedi < spring_points.size(); pickedi++) {
+            V_spring_particle_particle(V_ele, spring_points[pickedi].first, newq.segment<3>(spring_points[pickedi].second), 0.0, k_selected_now);
+            E += V_ele;
+        }
+
+        E += 0.5*(qdot_1 - qdot).transpose()*M*(qdot_1 - qdot);
+
+        return E;
+    };
+
+    auto force = [&](Eigen::VectorXd &f, Eigen::Ref<const Eigen::VectorXd> q2, Eigen::Ref<const Eigen::VectorXd> qdot2) {
+
+        assemble_forces(f, P.transpose()*q2+x0, P.transpose()*qdot2, V, T, v0, C,D, energy_type);
+
+        for(unsigned int pickedi = 0; pickedi < spring_points.size(); pickedi++) {
+            dV_spring_particle_particle_dq(dV_mouse, spring_points[pickedi].first, (P.transpose()*q2+x0).segment<3>(spring_points[pickedi].second), 0.0, k_selected_now);
+            f.segment<3>(3*constant_pickeds[pickedi]) -= dV_mouse.segment<3>(3);
+        }
+
+        f = P*f;
+    };
+
+    //assemble stiffness matrix,
+    auto stiffness = [&](Eigen::SparseMatrixd &K, Eigen::Ref<const Eigen::VectorXd> q2, Eigen::Ref<const Eigen::VectorXd> qdot2) {
+        assemble_stiffness(K, P.transpose()*q2+x0, P.transpose()*qdot2, V, T, v0, C, D, energy_type);
+        K = P*K*P.transpose();
+    };
+
+    if(fully_implicit)
+        implicit_euler(q, qdot, dt, M, energy, force, stiffness, tmp_qdot, tmp_force, tmp_stiffness);
+    else
+        linearly_implicit_euler(q, qdot, dt, M, force, stiffness, tmp_force, tmp_stiffness);
+
+
+
+    KE = 0;
+    PE = 0;
+    VG = 0;
+
+    for(unsigned int ei=0; ei<T.rows(); ++ei) {
+        T_linear_tetrahedron(T_ele, P.transpose()*qdot, T.row(ei), density, v0(ei));
+        KE += T_ele;
+
+        V_linear_tetrahedron(V_ele, P.transpose()*q+x0, V, T.row(ei), v0(ei), C, D, energy_type);
+        PE += V_ele;
+
+        calc_volume(VG_ele,P.transpose()*q+x0, V, T.row(ei));
+        VG += VG_ele;
+    }
+    if(initial < 10 or pow(10,2*oom_ke)< KE or pow(10,2*oom_pe)< PE){
+        oom_ke = floor(log10(abs(KE)));
+        oom_pe = floor(log10(abs(PE)));
+        initial +=1;
+    }
+    string bun = "";
+    if(bunny){
+        bun = "bunny";
+    }else{
+        bun="arma";
+    }
+    KE = KE / ((range_ke_map[energy_type +"_"+bun])*fm);
+    PE = PE / (range_pe_map[energy_type +"_"+bun]*fm);
+    VG = VG * 1e2/ v0.sum();
+    Visualize::add_energy_2(t, KE, PE, VG);
+     std::cout << t << "\t"<< VG<<std::endl;
 }
 
 inline void draw(Eigen::Ref<const Eigen::VectorXd> q, Eigen::Ref<const Eigen::VectorXd> qdot, double t) {
@@ -265,11 +375,16 @@ void parse_options(int argc, char** argv){
                 std::cout<<"Using default Energy Model: " << energies[0] << "\n";
                 energy_type = energies[0];
             }
-        }
+        }else if(strcmp(argv[i], "--sim_volume") == 0|| strcmp(argv[i], "-sv")== 0){
+            if(strcmp(argv[i+1],"true") ==0 ){
+                std::cout<<"Simulating Volume Gain " << argv[i+1] << "\n";
+                simulate_vol = true;
+            }
 
 
 
     }
+}
 }
 inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::VectorXd &qdot) {
 
@@ -281,18 +396,6 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
     fully_implicit = true;
 
 
-//    if(argc > 1) {
-//        if(strcmp(argv[1], "arma") == 0) {
-//            read_tetgen(V,T, "../data/arma_6.node", "../data/arma_6.ele");
-//            igl::readOBJ("../data/armadillo.obj", V_skin, F_skin);
-//
-//            bunny = false;
-//            fully_implicit = true;
-//        }
-//    }
-//    if(argc > 2) {
-//        energy_type = argv[2];
-//    }
     if(argc > 1) {
          parse_options(argc, argv);
     }
@@ -382,7 +485,12 @@ inline void assignment_setup(int argc, char **argv, Eigen::VectorXd &q, Eigen::V
 
         Visualize::plot_energy("T", 1, ImVec2(-15,10), ImVec2(0,10), ImGui::GetColorU32(ImGuiCol_PlotLines));
         Visualize::plot_energy("V", 2, ImVec2(-15,10), ImVec2(-30, 30), ImGui::GetColorU32(ImGuiCol_HeaderActive));
-        Visualize::plot_energy("T+V", 3, ImVec2(-15,10), ImVec2(-10,30), ImGui::GetColorU32(ImGuiCol_ColumnActive));
+
+        if(simulate_vol){
+            Visualize::plot_energy("Volume", 3, ImVec2(-15,10), ImVec2(80,120), ImGui::GetColorU32(ImGuiCol_ColumnActive));
+        }else{
+            Visualize::plot_energy("T+V", 3, ImVec2(-15,10), ImVec2(-30,30), ImGui::GetColorU32(ImGuiCol_ColumnActive));
+        }
 
         ImGui::End();
     };

@@ -154,6 +154,19 @@ bool Visualize::plot_phase_space(const char *label, ImVec2 q_bounds, ImVec2 q_do
 
     }
 
+    void Visualize::add_energy_2(float t, float T, float V, float VG) {
+
+        //update plotting cache
+        std::array<float,4> tmp;
+        tmp[0] = t;
+        tmp[1] = T;
+        tmp[2] = V;
+        tmp[3] = VG;
+        g_energy.push_back(tmp);
+
+
+    }
+
     bool Visualize::plot_energy(const char *label, unsigned int type, ImVec2 t_bounds, ImVec2 E_bounds, ImU32 plot_col) {
         using namespace ImGui; 
 

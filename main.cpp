@@ -15,10 +15,17 @@ double dt = 0.01; //time step
 //simulation loop
 bool simulating = true;
 
+
+
 bool simulation_callback() {
 
     while(simulating) {
-        simulate(q, qdot, dt, t);
+        if (simulate_vol){
+            simulate_volume(q, qdot, dt, t);
+        }else{
+            simulate(q, qdot, dt, t);
+        }
+
         t += dt;
     }
 
@@ -48,8 +55,8 @@ void h(Ret &&a, B b, C c, void (*func)(Ret, B, C)) {
 }
 
 int main(int argc, char **argv) {
-//    std::cout << "hey";
-    std::cout<<"Start A3\n";
+    std::cout << "hey";
+    std::cout<<"Start\n";
 
     //assignment specific setup
     assignment_setup(argc, argv, q, qdot);
