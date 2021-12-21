@@ -57,7 +57,7 @@ Followed by:
 Your code should now run significantly (sometimes as much as ten times) faster. 
 
 If you are using Windows, then running `cmake ..` should have created a Visual Studio solution file
-called `a3-finite-elements-3d.sln` that you can open and build from there. Building the project will generate an .exe file.
+called `neo-hookean-flesh-simulation.sln` that you can open and build from there. Building the project will generate an .exe file.
 
 
 ## Execution
