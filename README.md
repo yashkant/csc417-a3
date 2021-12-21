@@ -1,6 +1,8 @@
 ## Introduction
 
-This codebase contains implementation of various Neo-hookean strain energies discussed in the CSC417 Project. We also provide modifiers for changing various settings of the simulation such as poisson's ratio, young modulus, force multiplier and mesh (bunny or armadillo).  
+This codebase contains implementation of various Neo-hookean strain energies discussed in the [Stable Neo-Hookean Flesh Simulation](https://graphics.pixar.com/library/StableElasticity/paper.pdf) paper. We also provide modifiers for changing various settings of the simulation such as poisson's ratio, young modulus, force multiplier and mesh (bunny or armadillo).  
+
+[![Stable Neo-Hookean Flesh Simulation](https://github.com/yashkant/stable-neo-hookean-simulation/blob/master/neo-hookean-flesh.gif)](https://m.youtube.com/watch?v=aUB7hpQMkM0&amp;feature=youtu.be)
 
 ### Prerequisite installation
 
@@ -13,11 +15,9 @@ flag (if not then issue `git submodule update --init --recursive`).
 
 ### Layout
 
-The `README.md` file will describe the background, contents and tasks of the
-assignment.
 
 The `CMakeLists.txt` file setups up the cmake build routine for this
-assignment.
+repository.
 
 The `main.cpp` file will include the headers in the `include/` directory and
 link to the functions compiled in the `src/` directory. This file contains the
@@ -59,11 +59,21 @@ Your code should now run significantly (sometimes as much as ten times) faster.
 If you are using Windows, then running `cmake ..` should have created a Visual Studio solution file
 called `a3-finite-elements-3d.sln` that you can open and build from there. Building the project will generate an .exe file.
 
-Why don't you try this right now?
 
 ## Execution
 
 Once built, you can execute the assignment from inside the `build/` using 
 
-    ./a3-finite-elements-3d
+    ./neo-hookean-flesh-simulation
+This will start a simulation with armadillo mesh using Smith et al. energy model.
+You can use the options below to change energy model, Poisson's ratio, force multiplier and Younge Modulus:
+```
+add --poisson_rate 0.4 or -mu 0.4 to change Poisson's rate
+add --younge_modulus 6000 or -ym 6000 to change Younge Modulus
+add --force_multiplier 10 or -fm 10 to change force multiplier
+add --energy_model smith_14 or -em smith_14 to change energy model. You can use 'smith_14', 'smith_13', 'ogden', 'wang' or 'bower'.
+add --mesh bunny or -m bunny to change mesh to bunny.
+add --sim_volume true or -sm true to run volume preservation simulation test.
+
+```
 
